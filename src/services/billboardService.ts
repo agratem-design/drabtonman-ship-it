@@ -267,8 +267,8 @@ async function parseExcelData(arrayBuffer: ArrayBuffer): Promise<Billboard[]> {
     // تحويل البيانات إلى JSON
     const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][]
     
-    if (jsonData.length < 2) {
-      throw new Error('ملف الإكسل فارغ أو لا يحتوي على بيانات كافية')
+    if (!jsonData || jsonData.length < 2) {
+      return []
     }
 
     // استخراج العناوين من الصف الأول
@@ -438,7 +438,7 @@ export function exportBillboardsToExcel(billboards: Billboard[], filename: strin
       'رابط الخريطة',
       'رقم العقد',
       'اسم العميل',
-      'نوع الإعلان'
+      'ن��ع الإعلان'
     ]
 
     const data = [
