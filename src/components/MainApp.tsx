@@ -416,7 +416,7 @@ ${selectedBillboardsData
           <div class="logo-section">
             <img src="${window.location.origin}/logo-symbol.svg" alt="شعار الشركة" class="logo" onerror="this.style.display='none'" />
             <div class="company-info">
-              <div class="company-name-ar">الفــــارس الذهبــــي</div>
+              <div class="company-name-ar">الفـ��ــارس الذهبــــي</div>
               <div class="company-name-en">AL FARES AL DAHABI</div>
               <div class="company-name-ar" style="font-size: 10px;">للدعــــــاية والإعـــلان</div>
             </div>
@@ -978,6 +978,13 @@ ${selectedBillboardsData
       {showSystemGuide && (
         <PricingSystemGuide
           onClose={() => setShowSystemGuide(false)}
+        />
+      )}
+
+      {/* واجهة إدارة الأسعار المتقدمة الجديدة */}
+      {showEnhancedPricing && (user?.role === 'admin' || user?.permissions.some(p => p.name === 'admin_access')) && (
+        <EnhancedCityPricingInterface
+          onClose={() => setShowEnhancedPricing(false)}
         />
       )}
     </div>
