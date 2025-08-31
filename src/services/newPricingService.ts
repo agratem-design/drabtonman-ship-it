@@ -110,10 +110,20 @@ class NewPricingService {
     try {
       const updated: PriceList = { ...pricing, packages: ensurePackages(pricing.packages), currency: pricing.currency || 'د.ل' }
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updated))
+      // Cloud save is triggered separately to avoid blocking callers
       void cloudDatabase.saveRentalPricing(updated)
       return { success: true }
     } catch (e: any) {
       return { success: false, error: e?.message || 'unknown error' }
+    }
+  }
+
+  async savePricingToCloud(pricing?: PriceList): Promise<boolean> {
+    try {
+      const data = pricing || this.getPricing()
+      return await cloudDatabase.saveRentalPricing(data)
+    } catch {
+      return false
     }
   }
 
