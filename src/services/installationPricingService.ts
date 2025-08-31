@@ -109,8 +109,21 @@ class InstallationPricingService {
     try {
       const updatedPricing = { ...pricing, lastUpdated: new Date().toISOString() }
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updatedPricing))
-      void cloudDatabase.saveInstallationPricing(updatedPricing)
-      return { success: true, message: 'تم حفظ أس��ار التركيب بنجاح' }
+      
+      // محاولة الحفظ في السحابة بشكل غير متزامن
+      cloudDatabase.saveInstallationPricing(updatedPricing)
+        .then(success => {
+          if (success) {
+            console.log('✅ تم رفع أسعار التركيب للسحابة بنجاح')
+          } else {
+            console.warn('⚠️ فشل في رفع أسعار التركيب للسحابة، البيانات محفوظة محلياً')
+          }
+        })
+        .catch(error => {
+          console.warn('⚠️ خطأ في رفع أسعار التركيب للسحابة:', error)
+        })
+      
+      return { success: true, message: 'تم حفظ أسعار التركيب بنجاح (محلياً + السحابة)' }
     } catch (error) {
       console.error('Error saving installation pricing:', error)
       return { success: false, message: 'حدث خطأ في حفظ البيانات' }

@@ -110,8 +110,20 @@ class NewPricingService {
     try {
       const updated: PriceList = { ...pricing, packages: ensurePackages(pricing.packages), currency: pricing.currency || 'د.ل' }
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updated))
-      // Cloud save is triggered separately to avoid blocking callers
-      void cloudDatabase.saveRentalPricing(updated)
+      
+      // محاولة الحفظ في السحابة بشكل غير متزامن
+      cloudDatabase.saveRentalPricing(updated)
+        .then(success => {
+          if (success) {
+            console.log('✅ تم رفع الأسعار للسحابة بنجاح')
+          } else {
+            console.warn('⚠️ فشل في رفع الأسعار للسحابة، البيانات محفوظة محلياً')
+          }
+        })
+        .catch(error => {
+          console.warn('⚠️ خطأ في رفع الأسعار للسحابة:', error)
+        })
+      
       return { success: true }
     } catch (e: any) {
       return { success: false, error: e?.message || 'unknown error' }
@@ -124,6 +136,55 @@ class NewPricingService {
       return await cloudDatabase.saveRentalPricing(data)
     } catch {
       return false
+    }
+  }
+
+  // دالة للتحقق من حالة الاتصال بقاعدة البيانات
+  async checkCloudConnection(): Promise<{ connected: boolean; source: 'supabase' | 'netlify' | 'local' }> {
+    try {
+      const connectionStatus = await cloudDatabase.checkConnection()
+      
+      if (connectionStatus.supabase) {
+        return { connected: true, source: 'supabase' }
+      } else if (connectionStatus.netlify) {
+        return { connected: true, source: 'netlify' }
+      } else {
+        return { connected: false, source: 'local' }
+      }
+    } catch {
+      return { connected: false, source: 'local' }
+    }
+  }
+
+  // دالة لمزامنة البيانات مع السحابة
+  async forceSyncToCloud(): Promise<{ success: boolean; message: string }> {
+    try {
+      const pricing = this.getPricing()
+      const success = await cloudDatabase.saveRentalPricing(pricing)
+      
+      if (success) {
+        return { success: true, message: 'تم رفع البيانات للسحابة بنجاح' }
+      } else {
+        return { success: false, message: 'فشل في رفع البيانات للسحابة' }
+      }
+    } catch (error: any) {
+      return { success: false, message: `خطأ في المزامنة: ${error.message}` }
+    }
+  }
+
+  // دالة لتحديث البيانات من السحابة
+  async syncFromCloud(): Promise<{ success: boolean; message: string }> {
+    try {
+      const cloudPricing = await cloudDatabase.getRentalPricing()
+      
+      if (cloudPricing) {
+        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(cloudPricing))
+        return { success: true, message: 'تم تحديث البيانات من السحابة بنجاح' }
+      } else {
+        return { success: false, message: 'لا توجد بيانات في السحابة' }
+      }
+    } catch (error: any) {
+      return { success: false, message: `خطأ في التحديث: ${error.message}` }
     }
   }
 

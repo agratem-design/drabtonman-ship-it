@@ -64,8 +64,38 @@ const InstallationPricingManagement: React.FC<InstallationPricingManagementProps
 
   // Load pricing data on component mount
   useEffect(() => {
-    loadPricingData()
+    loadPricingDataFromCloud()
   }, [])
+
+  // تحميل البيانات من السحابة مع fallback محلي
+  const loadPricingDataFromCloud = async () => {
+    try {
+      setLoading(true)
+      
+      // محاولة تحميل من السحابة أولاً
+      const cloudData = await cloudDatabase.getInstallationPricing()
+      
+      if (cloudData) {
+        setPricing(cloudData)
+        console.log('✅ تم تحميل أسعار التركيب من السحابة')
+      } else {
+        // استخدام البيانات المحلية كبديل
+        const localData = installationPricingService.getInstallationPricing()
+        setPricing(localData)
+        console.log('⚠️ تم تحميل أسعار التركيب محلياً (السحابة غير متاحة)')
+      }
+      
+      setUnsavedChanges({ hasChanges: false, changedCells: new Set() })
+    } catch (error) {
+      console.error('Error loading installation pricing from cloud:', error)
+      // استخدام البيانات المحلية في حالة الخطأ
+      const localData = installationPricingService.getInstallationPricing()
+      setPricing(localData)
+      showNotification('error', 'تم تحميل البيانات محلياً بسبب خطأ في السحابة')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // Load zones from system pricing when opening import modal
   useEffect(() => {
@@ -110,7 +140,20 @@ const InstallationPricingManagement: React.FC<InstallationPricingManagementProps
       
       if (result.success) {
         setUnsavedChanges({ hasChanges: false, changedCells: new Set() })
-        showNotification('success', result.message)
+        showNotification('success', 'تم حفظ أسعار التركيب بنجاح')
+        
+        // محاولة المزامنة مع السحابة
+        try {
+          const cloudSuccess = await cloudDatabase.saveInstallationPricing(pricing)
+          if (cloudSuccess) {
+            showNotification('success', 'تم رفع البيانات للسحابة بنجاح')
+          } else {
+            showNotification('success', 'تم الحفظ محلياً (السحابة غير متاحة)')
+          }
+        } catch (cloudError) {
+          console.warn('خطأ في رفع البيانات للسحابة:', cloudError)
+          showNotification('success', 'تم الحفظ محلياً (السحابة غير متاحة)')
+        }
       } else {
         showNotification('error', result.message)
       }
@@ -360,29 +403,30 @@ const InstallationPricingManagement: React.FC<InstallationPricingManagementProps
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-7xl max-h-[95vh] overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-orange-600 to-red-600 p-6 text-white">
+        <div className="bg-gradient-to-r from-orange-600 to-red-600 p-6 text-white relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-orange-700/20 via-transparent to-red-700/20"></div>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                <Wrench className="w-6 h-6" />
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center shadow-lg backdrop-blur-sm">
+                <Wrench className="w-7 h-7" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold">إدارة أسعار التركيب</h1>
-                <p className="text-sm opacity-90">إدارة أسعار تركيب اللوحات الإعلانية حسب المقاسات والمناطق</p>
+                <h1 className="text-3xl font-black mb-1">إدارة أسعار التركيب</h1>
+                <p className="text-sm opacity-80 font-medium">نظام متطور لإدارة أسعار تركيب اللوحات الإعلانية</p>
               </div>
             </div>
             <Button
               onClick={onClose}
               variant="outline"
               size="sm"
-              className="bg-white/20 border-white/30 text-white hover:bg-white/30"
+              className="bg-white/20 border-white/30 text-white hover:bg-white/30 backdrop-blur-sm"
             >
               <X className="w-5 h-5" />
             </Button>
           </div>
         </div>
 
-        <div className="p-6 overflow-y-auto max-h-[calc(95vh-120px)]">
+        <div className="p-6 overflow-y-auto max-h-[calc(95vh-120px)] bg-gradient-to-br from-gray-50 to-orange-50">
           {/* Notification */}
           {notification && (
             <div className={`mb-6 p-4 rounded-lg border-l-4 ${
@@ -512,13 +556,13 @@ const InstallationPricingManagement: React.FC<InstallationPricingManagementProps
                   placeholder="البحث في المقاسات..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 w-64"
+                  className="pl-10 w-64 border-2 border-orange-300 focus:border-orange-500 rounded-xl"
                 />
               </div>
               <Button
                 onClick={addSize}
                 variant="outline"
-                className="text-green-600 border-green-300"
+                className="text-green-600 border-2 border-green-300 hover:bg-green-50 font-bold px-4 py-2 rounded-xl"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 إضافة مقاس
@@ -526,7 +570,7 @@ const InstallationPricingManagement: React.FC<InstallationPricingManagementProps
               <Button
                 onClick={() => setShowAddZoneModal(true)}
                 variant="outline"
-                className="text-blue-600 border-blue-300"
+                className="text-blue-600 border-2 border-blue-300 hover:bg-blue-50 font-bold px-4 py-2 rounded-xl"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 إضافة منطقة
@@ -534,7 +578,7 @@ const InstallationPricingManagement: React.FC<InstallationPricingManagementProps
               <Button
                 onClick={() => setShowImportZones(true)}
                 variant="outline"
-                className="text-purple-600 border-purple-300"
+                className="text-purple-600 border-2 border-purple-300 hover:bg-purple-50 font-bold px-4 py-2 rounded-xl"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 إضافة مناطق من النظام
@@ -543,7 +587,7 @@ const InstallationPricingManagement: React.FC<InstallationPricingManagementProps
             <div className="flex gap-2">
               <Button
                 onClick={() => setShowQuoteModal(true)}
-                className="bg-orange-600 hover:bg-orange-700 text-white"
+                className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-bold px-6 py-2 rounded-xl shadow-lg"
               >
                 <FileText className="w-4 h-4 mr-2" />
                 إنشاء فاتورة عرض
@@ -552,23 +596,23 @@ const InstallationPricingManagement: React.FC<InstallationPricingManagementProps
           </div>
 
           {/* Base Prices (sizes only) */}
-          <Card className="mb-6 shadow-lg rounded-lg overflow-hidden">
-            <div className="p-4 bg-gradient-to-r from-emerald-50 to-emerald-100 border-b border-emerald-200">
-              <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+          <Card className="mb-6 shadow-xl rounded-xl overflow-hidden border-2 border-emerald-200">
+            <div className="p-6 bg-gradient-to-r from-emerald-50 to-emerald-100 border-b border-emerald-200">
+              <h3 className="text-2xl font-black text-gray-900 flex items-center gap-3 mb-2">
                 <Wrench className="w-6 h-6 text-emerald-600" />
                 الأسعار الأساسية حسب المقاسات
               </h3>
-              <p className="text-sm text-gray-700 mt-2">هذه الأسعار موحدة لكل المناطق. يمكن تعديلها بالنقر على أي مقاس.</p>
+              <p className="text-sm text-gray-700 font-medium">هذه الأسعار موحدة لكل المناطق. يمكن تعديلها بالنقر على أي مقاس.</p>
             </div>
             <div className="overflow-x-auto bg-white">
               <table className="w-full border-collapse">
                 <thead className="sticky top-0 bg-white shadow-sm">
                   <tr>
                     {pricing.sizes.map(size => (
-                      <th key={size} className="border border-gray-200 p-3 text-center font-bold text-white min-w-[120px] bg-emerald-500">
+                      <th key={size} className="border border-gray-200 p-4 text-center font-black text-white min-w-[120px] bg-gradient-to-r from-emerald-500 to-emerald-600 shadow-lg">
                         <div className="leading-tight">
-                          {size}
-                          <div className="text-xs opacity-80 mt-1">سعر أساسي</div>
+                          <div className="text-lg">{size}</div>
+                          <div className="text-xs opacity-90 mt-1">سعر أساسي</div>
                         </div>
                       </th>
                     ))}
@@ -604,41 +648,41 @@ const InstallationPricingManagement: React.FC<InstallationPricingManagementProps
           </Card>
 
           {/* Pricing Table */}
-          <Card className="mb-6 shadow-lg rounded-lg overflow-hidden">
-            <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
-              <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+          <Card className="mb-6 shadow-xl rounded-xl overflow-hidden border-2 border-gray-200">
+            <div className="p-6 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+              <h3 className="text-2xl font-black text-gray-900 flex items-center gap-3 mb-2">
                 <Calculator className="w-6 h-6 text-orange-600" />
                 أسعار التركيب حسب المناطق والمقاسات
               </h3>
-              <p className="text-sm text-gray-700 mt-2">جميع الأسعار شاملة تكلفة التركيب والتأسيس</p>
+              <p className="text-sm text-gray-700 font-medium">جميع الأسعار شاملة تكلفة التركيب والتأسيس</p>
             </div>
             <div className="overflow-x-auto bg-white">
               <table className="w-full border-collapse">
                 <thead className="sticky top-0 bg-white shadow-sm">
                   <tr>
-                    <th className="border border-gray-200 p-3 text-right font-bold bg-orange-50 text-gray-800 min-w-[120px]">
+                    <th className="border border-gray-200 p-4 text-right font-black bg-gradient-to-r from-orange-100 to-orange-200 text-gray-900 min-w-[150px] shadow-sm">
                       المنطقة
                     </th>
-                    <th className="border border-gray-200 p-3 text-center font-bold bg-orange-50 text-gray-800 min-w-[100px]">
+                    <th className="border border-gray-200 p-4 text-center font-black bg-gradient-to-r from-orange-100 to-orange-200 text-gray-900 min-w-[120px] shadow-sm">
                       المعامل
                     </th>
-                    <th className="border border-gray-200 p-3 text-center font-bold bg-red-500 text-white min-w-[100px]">
+                    <th className="border border-gray-200 p-4 text-center font-black bg-gradient-to-r from-red-500 to-red-600 text-white min-w-[120px] shadow-sm">
                       الإجراءات
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {Object.values(pricing.zones).map((zone, index) => (
-                    <tr key={zone.name} className={`hover:bg-orange-25 transition-colors ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
-                      <td className="border border-gray-200 p-3 font-bold text-gray-900 bg-orange-50">
+                    <tr key={zone.name} className={`hover:bg-orange-50 transition-all duration-200 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
+                      <td className="border border-gray-200 p-4 font-bold text-gray-900 bg-gradient-to-r from-orange-50 to-orange-100">
                         <div>
-                          <div className="font-bold">{zone.name}</div>
+                          <div className="font-black text-lg">{zone.name}</div>
                           {zone.description && (
-                            <div className="text-xs text-gray-600 mt-1">{zone.description}</div>
+                            <div className="text-sm text-gray-600 mt-1 font-medium">{zone.description}</div>
                           )}
                         </div>
                       </td>
-                      <td className="border border-gray-200 p-2 text-center">
+                      <td className="border border-gray-200 p-3 text-center">
                         <Input
                           type="number"
                           value={zone.multiplier}
@@ -650,21 +694,21 @@ const InstallationPricingManagement: React.FC<InstallationPricingManagementProps
                             // Force save when user finishes editing
                             savePricingData()
                           }}
-                          className="w-20 text-center font-bold text-sm border-2 border-purple-200 focus:border-purple-500 bg-white"
+                          className="w-24 text-center font-bold text-lg border-2 border-purple-300 focus:border-purple-500 bg-white rounded-lg shadow-sm"
                           step="0.1"
                           min="0"
                           placeholder="1.0"
                         />
                       </td>
-                      <td className="border border-gray-200 p-2 text-center">
+                      <td className="border border-gray-200 p-4 text-center">
                         <Button
                           onClick={() => removeZone(zone.name)}
                           variant="outline"
                           size="sm"
-                          className="text-red-600 border-red-300 hover:bg-red-50 transition-colors"
+                          className="text-red-600 border-2 border-red-300 hover:bg-red-50 transition-colors font-bold rounded-lg"
                           disabled={Object.keys(pricing.zones).length <= 1}
                         >
-                          <Trash2 className="w-3 h-3" />
+                          <Trash2 className="w-4 h-4" />
                         </Button>
                       </td>
                     </tr>
@@ -675,23 +719,26 @@ const InstallationPricingManagement: React.FC<InstallationPricingManagementProps
           </Card>
 
           {/* Size Management */}
-          <Card className="mb-6">
-            <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-100 border-b">
-              <h3 className="text-lg font-bold text-gray-900">إدارة المقاسات</h3>
+          <Card className="mb-6 shadow-lg rounded-xl border-2 border-blue-200">
+            <div className="p-6 bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200">
+              <h3 className="text-xl font-black text-gray-900 flex items-center gap-2">
+                <Building2 className="w-6 h-6 text-blue-600" />
+                إدارة المقاسات
+              </h3>
             </div>
-            <div className="p-4">
+            <div className="p-6 bg-white">
               <div className="flex flex-wrap gap-2">
                 {pricing.sizes.map(size => (
-                  <div key={size} className="flex items-center gap-2 bg-blue-100 px-3 py-2 rounded-lg">
-                    <span className="font-semibold text-blue-800">{size}</span>
+                  <div key={size} className="flex items-center gap-2 bg-gradient-to-r from-blue-100 to-blue-200 px-4 py-3 rounded-xl border border-blue-300 shadow-sm">
+                    <span className="font-bold text-blue-900 text-lg">{size}</span>
                     <Button
                       onClick={() => removeSize(size)}
                       size="sm"
                       variant="outline"
-                      className="text-red-600 border-red-300 hover:bg-red-50 p-1 h-6 w-6"
+                      className="text-red-600 border-red-300 hover:bg-red-50 p-1 h-7 w-7 rounded-lg"
                       disabled={pricing.sizes.length <= 1}
                     >
-                      <X className="w-3 h-3" />
+                      <X className="w-4 h-4" />
                     </Button>
                   </div>
                 ))}
@@ -699,7 +746,7 @@ const InstallationPricingManagement: React.FC<InstallationPricingManagementProps
                   onClick={addSize}
                   size="sm"
                   variant="outline"
-                  className="text-green-600 border-green-300 hover:bg-green-50"
+                  className="text-green-600 border-2 border-green-300 hover:bg-green-50 font-bold px-4 py-3 rounded-xl"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   إضافة مقاس
