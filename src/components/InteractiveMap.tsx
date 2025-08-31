@@ -58,7 +58,7 @@ export default function InteractiveMap({ billboards, onImageView }: InteractiveM
 
     // إزالة العلامات السابقة للوحات
     map.eachLayer((layer: any) => {
-      if (layer.options && layer.options.billboardId) {
+      if (layer.options?.billboardId) {
         map.removeLayer(layer)
       }
     })

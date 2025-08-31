@@ -204,7 +204,7 @@ export async function loadBillboardsFromExcel(): Promise<Billboard[]> {
     }
 
     // ثانياً: محاولة تحميل من Google Sheets (إذا كان الرابط متاحاً)
-    if (EXCEL_URL && EXCEL_URL.includes('docs.google.com')) {
+    if (EXCEL_URL?.includes('docs.google.com')) {
       console.log('☁️ محاولة تحميل من Google Sheets...')
       
       try {

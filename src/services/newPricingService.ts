@@ -28,7 +28,7 @@ const CUSTOMER_TYPES: CustomerType[] = ['marketers', 'individuals', 'companies']
 const PRICE_LIST_TYPES: PriceListType[] = ['A', 'B']
 
 function ensurePackages(packages?: PackageDuration[]): PackageDuration[] {
-  if (packages && packages.length) return packages
+  if (packages?.length) return packages
   return DEFAULT_PACKAGES
 }
 
@@ -81,7 +81,7 @@ class NewPricingService {
       if (!sizesFromDb || sizesFromDb.length === 0) {
         try { sizesFromDb = await sizesDatabase.getDistinctSizesFromPricing() } catch {}
       }
-      if (sizesFromDb && sizesFromDb.length) {
+      if (sizesFromDb?.length) {
         const normalized = Array.from(new Set(sizesFromDb.map(s => (s || '').toString().trim()).filter(Boolean)))
         localStorage.setItem(this.SIZES_STORAGE_KEY, JSON.stringify(normalized))
       } else if (!localStorage.getItem(this.SIZES_STORAGE_KEY)) {

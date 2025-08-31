@@ -139,7 +139,7 @@ class AuthService {
 
       const users = this.getUsers()
       const currentUser = users.find(u => u.id === user.id)
-      return currentUser && currentUser.isActive ? currentUser : null
+      return currentUser?.isActive ? currentUser : null
     } catch {
       return null
     }
