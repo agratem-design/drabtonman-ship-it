@@ -82,7 +82,7 @@ export default function Header({ onOpenSettings, onOpenPricing, onOpenInstallati
                     </div>
 
                     <div className="p-2">
-                      {user.permissions.some(p => p.name === 'admin_access') && (
+                      {(user.role === 'admin' || user.permissions.some(p => p.name === 'admin_access')) && (
                         <>
                           <button
                             onClick={() => {
