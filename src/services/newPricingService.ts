@@ -76,9 +76,14 @@ class NewPricingService {
 
     // Initialize sizes from Supabase distinct sizes if available
     try {
-      const sizesFromDb = await sizesDatabase.getDistinctSizesFromPricing()
-      if (sizesFromDb.length) {
-        localStorage.setItem(this.SIZES_STORAGE_KEY, JSON.stringify(sizesFromDb))
+      let sizesFromDb: string[] = []
+      try { sizesFromDb = await sizesDatabase.getSizes() } catch {}
+      if (!sizesFromDb || sizesFromDb.length === 0) {
+        try { sizesFromDb = await sizesDatabase.getDistinctSizesFromPricing() } catch {}
+      }
+      if (sizesFromDb && sizesFromDb.length) {
+        const normalized = Array.from(new Set(sizesFromDb.map(s => (s || '').toString().trim()).filter(Boolean)))
+        localStorage.setItem(this.SIZES_STORAGE_KEY, JSON.stringify(normalized))
       } else if (!localStorage.getItem(this.SIZES_STORAGE_KEY)) {
         localStorage.setItem(this.SIZES_STORAGE_KEY, JSON.stringify(DEFAULT_SIZES))
       }
