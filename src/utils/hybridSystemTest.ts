@@ -42,7 +42,7 @@ export class HybridSystemTest {
       const sizes = [...new Set(billboards.map(b => b.size))]
       const statuses = [...new Set(billboards.map(b => b.status))]
       
-      console.log(`📊 إحصائيا�� البيانات:`)
+      console.log("📊 إحصائيا�� البيانات:")
       console.log(`   - البلديات: ${municipalities.length} (${municipalities.join(', ')})`)
       console.log(`   - المقاسات: ${sizes.length} (${sizes.join(', ')})`)
       console.log(`   - الحالات: ${statuses.length} (${statuses.join(', ')})`)
@@ -141,7 +141,7 @@ export class HybridSystemTest {
         marketers: pricingService.getBillboardPrice(testBillboard.size, zone, 'marketers')
       }
       
-      console.log(`💰 الأسعار حسب نوع العميل:`)
+      console.log("💰 الأسعار حسب نوع العميل:")
       console.log(`   - الشركات: ${prices.companies} د.ل`)
       console.log(`   - الأفراد: ${prices.individuals} د.ل`)
       console.log(`   - المسوقين: ${prices.marketers} د.ل`)
@@ -150,7 +150,7 @@ export class HybridSystemTest {
       const priceA = newPricingService.getBillboardPriceABWithDuration(testBillboard.size, zone, 'A', 1)
       const priceB = newPricingService.getBillboardPriceABWithDuration(testBillboard.size, zone, 'B', 1)
       
-      console.log(`📋 أسعار قوائم A/B:`)
+      console.log("📋 أسعار قوائم A/B:")
       console.log(`   - قائمة A: ${priceA} د.ل`)
       console.log(`   - قائمة B: ${priceB} د.ل`)
       
@@ -235,7 +235,7 @@ export class HybridSystemTest {
         throw new Error('فشل في إنشاء الفاتورة')
       }
       
-      console.log(`✅ تم إنشاء فاتورة بنجاح:`)
+      console.log("✅ تم إنشاء فاتورة بنجاح:")
       console.log(`   - رقم الفاتورة: ${quote.id}`)
       console.log(`   - عدد البنود: ${quote.items.length}`)
       console.log(`   - الباقة: ${testPackage.label}`)
@@ -342,7 +342,7 @@ export class HybridSystemTest {
       
       console.log('✅ النظام المختلط يعمل بشكل صحيح!')
       console.log(`📊 البيانات: ${billboards.length} لوحة من الإكسل`)
-      console.log(`💰 الأسعار: محلية وموثوقة`)
+      console.log("💰 الأسعار: محلية وموثوقة")
       console.log(`🔗 التكامل: اللوحة ${firstBillboard.name} - ${billboardPrice} د.ل`)
       
       return true
