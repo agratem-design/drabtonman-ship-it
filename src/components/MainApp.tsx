@@ -643,6 +643,13 @@ ${selectedBillboardsData
             </h3>
             <div className="flex flex-wrap gap-3">
               <Button
+                onClick={() => setShowEnhancedPricing(true)}
+                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold shadow-lg"
+              >
+                <Star className="w-4 h-4 mr-2" />
+                إدارة الأسعار المتقدمة الجديدة
+              </Button>
+              <Button
                 onClick={() => setShowSimplifiedCalculator(true)}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
               >
@@ -770,7 +777,7 @@ ${selectedBillboardsData
                   className="bg-emerald-600 hover:bg-emerald-700 text-white px-6"
                 >
                   <Calculator className="w-4 h-4 ml-2" />
-                  حساب الأسعار
+                  حساب الأس��ار
                 </Button>
                 <Button
                   onClick={() => setShowEmailDialog(true)}
