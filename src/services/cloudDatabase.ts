@@ -69,7 +69,7 @@ type PricingRow = {
 function rowsToPriceList(rows: PricingRow[]): PriceList {
   const zones: PriceList['zones'] = {}
   const packagesSet = new Set<number>()
-  let currency: string = 'د.ل'
+  let currency = 'د.ل'
 
   for (const r of rows) {
     if (!zones[r.zone_name]) {
@@ -274,7 +274,7 @@ export const cloudDatabase = {
         const { data, error } = await supabase.from('installation_pricing').select('*')
         if (!error && data && data.length > 0) {
           const zones: InstallationPricing['zones'] = {}
-          let currency: string = 'د.ل'
+          let currency = 'د.ل'
           
           for (const r of data as unknown as Row[]) {
             if (!zones[r.zone_name]) {

@@ -421,7 +421,7 @@ function isValidCoordinates(coordinates: string): boolean {
 /**
  * حفظ البيانات في ملف إكسل جديد
  */
-export function exportBillboardsToExcel(billboards: Billboard[], filename: string = 'billboards.xlsx'): void {
+export function exportBillboardsToExcel(billboards: Billboard[], filename = 'billboards.xlsx'): void {
   try {
     const headers = [
       'اسم اللوحة',

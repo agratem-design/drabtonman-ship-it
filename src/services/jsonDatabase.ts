@@ -103,7 +103,7 @@ export const jsonDatabase = {
       // ignore
     }
   },
-  exportDatabase(filename: string = 'database.json'): void {
+  exportDatabase(filename = 'database.json'): void {
     try {
       const full = localStorage.getItem(DB_CACHE_KEYS.full)
       const rental = localStorage.getItem(DB_CACHE_KEYS.rental)

@@ -82,7 +82,7 @@ class LevelService {
   /**
    * الحصول على جميع المستويات
    */
-  getLevels(includeInactive: boolean = false): Level[] {
+  getLevels(includeInactive = false): Level[] {
     try {
       const stored = localStorage.getItem(this.STORAGE_KEY)
       const levels = stored ? JSON.parse(stored) : []
@@ -194,7 +194,7 @@ class LevelService {
   /**
    * البحث في المستويات
    */
-  searchLevels(query: string, includeInactive: boolean = false): Level[] {
+  searchLevels(query: string, includeInactive = false): Level[] {
     const levels = this.getLevels(includeInactive)
     const searchTerm = query.toLowerCase().trim()
     
@@ -482,7 +482,7 @@ class LevelService {
   /**
    * الحصول على أحدث المستويات المضافة
    */
-  getRecentLevels(limit: number = 3): Level[] {
+  getRecentLevels(limit = 3): Level[] {
     const levels = this.getLevels()
     return levels
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())

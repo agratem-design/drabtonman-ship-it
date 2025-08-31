@@ -149,7 +149,7 @@ const ModernPricingManagement: React.FC<ModernPricingManagementProps> = ({ onClo
     }
   }
 
-  const getPrice = (obj: any, path: string[], defaultValue: number = 0): number => {
+  const getPrice = (obj: any, path: string[], defaultValue = 0): number => {
     let current = obj
     for (const key of path) {
       if (current && typeof current === 'object' && key in current) {
