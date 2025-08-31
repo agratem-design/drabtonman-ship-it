@@ -212,15 +212,13 @@ const EnhancedPricingManagement: React.FC<{ onClose: () => void }> = ({ onClose 
       const { newPricingService } = await import('@/services/newPricingService')
       const pricingFromService = newPricingService.getPricing()
 
-      // Load distinct sizes from Supabase pricing table
+      // Load sizes from sizes table first, then fallback to pricing distinct
       const { sizesDatabase } = await import('@/services/sizesDatabase')
-      const distinctSizes = await (async () => {
-        const { data, error } = await (sizesDatabase as any).client
-          ? { data: null, error: null }
-          : { data: null, error: null }
-        const sizes = await sizesDatabase.getDistinctSizesFromPricing?.() || []
-        return sizes
-      })()
+      let distinctSizes: string[] = []
+      try { distinctSizes = await sizesDatabase.getSizes() } catch {}
+      if (!distinctSizes || distinctSizes.length === 0) {
+        try { distinctSizes = await sizesDatabase.getDistinctSizesFromPricing() } catch {}
+      }
 
       // Update municipalities list from pricing zones
       const availableZones = Object.keys(pricingFromService.zones)
@@ -396,8 +394,11 @@ const EnhancedPricingManagement: React.FC<{ onClose: () => void }> = ({ onClose 
           currentPricing.zones[zoneName].prices[customerType][size] = value
 
           const result = newPricingService.updatePricing(currentPricing)
-          if (result.success) {
+          const saved = await newPricingService.savePricingToCloud(currentPricing)
+          if (result.success && saved) {
             console.log(`تم حفظ السعر تلقائياً: ${size} - ${category} = ${value}`)
+          } else if (!saved) {
+            console.warn('فشل حفظ السعر في قاعدة البيانات')
           }
         }
       }
@@ -450,7 +451,7 @@ const EnhancedPricingManagement: React.FC<{ onClose: () => void }> = ({ onClose 
       await autoSaveChanges({})
       console.log(`تم حفظ الفئ�� الجديدة تلقائياً: ${newCategory.name}`)
     } catch (error) {
-      console.warn('لم يتم حفظ الفئة الجديدة تلقائياً:', error)
+      console.warn('لم يتم حفظ الفئة الجدي��ة تلقائياً:', error)
     }
 
     setNewCategory({ name: '', description: '', color: 'blue' })
@@ -628,12 +629,13 @@ const EnhancedPricingManagement: React.FC<{ onClose: () => void }> = ({ onClose 
       }
 
       const result = newPricingService.updatePricing(updatedPricing)
+      const saved = await newPricingService.savePricingToCloud(updatedPricing)
 
-      if (result.success) {
+      if (result.success && saved) {
         console.log('تم حفظ التغييرات تلقائياً')
         return true
       } else {
-        console.error('فشل في الحفظ التلقائي:', result.error)
+        console.error('فشل في الحفظ التلقائي:', result.error || (!saved ? 'DB save failed' : ''))
         return false
       }
     } catch (error) {
@@ -670,7 +672,7 @@ const EnhancedPricingManagement: React.FC<{ onClose: () => void }> = ({ onClose 
     if (window.confirm('هل أنت متأكد من إلغاء جميع التغييرات غير المحفوظة؟')) {
       await initializePricingData()
       setUnsavedChanges({ hasChanges: false, changedCells: new Set() })
-      showNotification('success', 'تم إلغاء جميع التغييرات')
+      showNotification('success', 'تم إلغاء جميع التغ��يرات')
     }
   }
 
@@ -1407,7 +1409,7 @@ const EnhancedPricingManagement: React.FC<{ onClose: () => void }> = ({ onClose 
                   variant="outline"
                   className="flex-1"
                 >
-                  إلغاء
+                  إلغ��ء
                 </Button>
               </div>
             </Card>
@@ -1437,7 +1439,7 @@ const EnhancedPricingManagement: React.FC<{ onClose: () => void }> = ({ onClose 
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">خصم اختياري (%)</label>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">خصم اختيا��ي (%)</label>
                   <Input
                     type="number"
                     value={newLevel.discount}

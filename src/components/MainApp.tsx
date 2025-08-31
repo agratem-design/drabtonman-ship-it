@@ -66,7 +66,7 @@ export default function MainApp() {
         setLoading(true)
         const data = await loadBillboardsFromExcel()
 
-        // تطبيق فلترة الزبون المخصص إذا ك��ن المستخدم لديه هذه الصلاحية
+        // تطبيق فلترة الزبون المخصص إذا ����ن المستخدم لديه هذه الصلاحية
         let filteredData = data
         if (user?.permissions.some(p => p.name === 'view_specific_client') && user.assignedClient) {
           filteredData = clientService.filterBillboardsByClient(data, user.assignedClient)
@@ -95,6 +95,7 @@ export default function MainApp() {
         if (!sizes || sizes.length === 0) {
           sizes = Array.from(new Set(billboards.map((b) => (b.size || '').toString().trim()).filter(Boolean)))
         }
+        sizes = Array.from(new Set((sizes || []).map(s => (s || '').toString().trim()).filter(Boolean)))
         setSizeOptions(sizes)
       } catch {}
     }
@@ -616,7 +617,7 @@ ${selectedBillboardsData
         />
 
         {/* اختيار مدة التسعير */}
-        {user?.permissions.some(p => p.name === 'admin_access') && (
+        {(user?.role === 'admin' || user?.permissions.some(p => p.name === 'admin_access')) && (
           <div className="bg-white rounded-xl shadow-lg p-4 mb-6 border-2 border-emerald-200">
             <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2 text-right" dir="rtl">
               <DollarSign className="w-5 h-5 text-emerald-600" />
@@ -632,7 +633,7 @@ ${selectedBillboardsData
         )}
 
         {/* أزرار إدارة الأسعار للمدراء */}
-        {user?.permissions.some(p => p.name === 'admin_access') && (
+        {(user?.role === 'admin' || user?.permissions.some(p => p.name === 'admin_access')) && (
           <div className="bg-white rounded-xl shadow-lg p-4 mb-6 border-2 border-blue-200">
             <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
               <Settings className="w-5 h-5 text-blue-600" />
@@ -721,7 +722,7 @@ ${selectedBillboardsData
               isSelected={selectedBillboards.has(billboard.id)}
               onToggleSelection={toggleBillboardSelection}
               onViewImage={setSelectedImage}
-              showPricing={user?.permissions.some(p => p.name === 'admin_access')}
+              showPricing={Boolean(user?.role === 'admin' || user?.permissions.some(p => p.name === 'admin_access'))}
               selectedDuration={selectedPricingDuration}
             />
           ))}
@@ -744,7 +745,7 @@ ${selectedBillboardsData
                 >
                   إلغاء التحديد
                 </Button>
-                {user?.permissions.some(p => p.name === 'admin_access') && (
+                {(user?.role === 'admin' || user?.permissions.some(p => p.name === 'admin_access')) && (
                   <>
                     <Button
                       onClick={() => setShowQuoteDialog(true)}
@@ -898,17 +899,17 @@ ${selectedBillboardsData
       )}
 
       {/* نافذة إدارة الأسعار */}
-      {showPricingManagement && user?.permissions.some(p => p.name === 'admin_access') && (
+      {showPricingManagement && (user?.role === 'admin' || user?.permissions.some(p => p.name === 'admin_access')) && (
         <EnhancedPricingManagement onClose={() => setShowPricingManagement(false)} />
       )}
 
-      {/* نافذة إدارة ��سعار التركيب */}
-      {showInstallationPricing && user?.permissions.some(p => p.name === 'admin_access') && (
+      {/* ناف��ة إدارة ��سعار التركيب */}
+      {showInstallationPricing && (user?.role === 'admin' || user?.permissions.some(p => p.name === 'admin_access')) && (
         <InstallationPricingManagement onClose={() => setShowInstallationPricing(false)} />
       )}
 
       {/* نافذة فاتور�� العرض */}
-      {showQuoteDialog && user?.permissions.some(p => p.name === 'admin_access') && (
+      {showQuoteDialog && (user?.role === 'admin' || user?.permissions.some(p => p.name === 'admin_access')) && (
         <QuoteDialog
           isOpen={showQuoteDialog}
           onClose={() => setShowQuoteDialog(false)}
@@ -918,7 +919,7 @@ ${selectedBillboardsData
       )}
 
       {/* صفحة حالة النظام والاختبار */}
-      {showSystemStatus && user?.permissions.some(p => p.name === 'admin_access') && (
+      {showSystemStatus && (user?.role === 'admin' || user?.permissions.some(p => p.name === 'admin_access')) && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl max-h-[95vh] overflow-hidden">
             <div className="bg-gradient-to-r from-purple-600 to-purple-700 p-4 text-white flex items-center justify-between">
@@ -955,7 +956,7 @@ ${selectedBillboardsData
         />
       )}
 
-      {/* الحاسبة المبسطة */}
+      {/* الحاس��ة المبسطة */}
       {showSimplifiedCalculator && (
         <SimplifiedPricingCalculator
           onClose={() => setShowSimplifiedCalculator(false)}

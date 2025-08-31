@@ -7,7 +7,7 @@ const DEFAULT_INSTALLATION_SIZES: BillboardSize[] = ['5x13', '4x12', '4x10', '3x
 
 // أسعار التركيب الافتراضية حسب المقاس
 const createDefaultInstallationPrices = (): Record<BillboardSize, number> => ({
-  '5x13': 1500, // سعر تركيب للمقاس الكبير
+  '5x13': 1500,
   '4x12': 1200,
   '4x10': 1000,
   '3x8': 800,
@@ -22,7 +22,7 @@ const DEFAULT_INSTALLATION_PRICING: InstallationPricing = {
       name: 'مصراتة',
       prices: createDefaultInstallationPrices(),
       multiplier: 1.0,
-      description: 'أسعار التركيب ��منطقة مصراتة'
+      description: 'أسعار التركيب لمنطقة مصراتة'
     },
     'أبو سليم': {
       name: 'أبو سليم',
@@ -49,10 +49,6 @@ const DEFAULT_INSTALLATION_PRICING: InstallationPricing = {
   basePrices: createDefaultInstallationPrices()
 }
 
-/**
- * خدمة إدارة أسعار التركيب
- * تختص بإدارة أسعار تركيب اللوحات الإعلانية حسب المقاسات والمناطق
- */
 class InstallationPricingService {
   private readonly STORAGE_KEY = 'al-fares-installation-pricing'
 
@@ -60,34 +56,40 @@ class InstallationPricingService {
     this.initializeDefaults()
   }
 
-  /**
-   * تهيئة البيانات الافتراضية
-   */
-  
+  // تهيئة البيانات الافتراضية إذا لم تكن موجودة
+  private async initializeDefaults() {
+    try {
+      const raw = localStorage.getItem(this.STORAGE_KEY)
+      if (!raw) {
+        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(DEFAULT_INSTALLATION_PRICING))
+      }
+    } catch {
+      // تجاهل أخطاء التخزين المحلية
+    }
 
-
-private initializeDefaults() {
-  try { localStorage.removeItem(this.STORAGE_KEY) } catch {}
-  cloudDatabase.getInstallationPricing()
-    .then(remote => { if (remote) { localStorage.setItem(this.STORAGE_KEY, JSON.stringify(remote)) } })
-    .catch(() => {})
-}
-catch {}
-  cloudDatabase.getInstallationPricing()
-    .then((remote) => { if (remote) { localStorage.setItem(this.STORAGE_KEY, JSON.stringify(remote)) } })
-    .catch(() => {})
-}
-
+    // محاولة جلب البيانات من قاعدة السحابة وتخزينها محلياً
+    try {
+      const remote = await cloudDatabase.getInstallationPricing()
+      if (remote) {
+        localStorage.setItem(this.STORAGE_KEY, JSON.stringify({
+          zones: remote.zones || {},
+          sizes: remote.sizes || DEFAULT_INSTALLATION_SIZES,
+          currency: remote.currency || 'د.ل',
+          lastUpdated: remote.lastUpdated || new Date().toISOString(),
+          basePrices: remote.basePrices || createDefaultInstallationPrices()
+        }))
+      }
+    } catch {
+      // لا شيء
+    }
   }
-  /**
-   * الحصول على أسعار التركيب
-   */
+
+  // الحصول على أسعار التركيب
   getInstallationPricing(): InstallationPricing {
     try {
       const data = localStorage.getItem(this.STORAGE_KEY)
       const parsed = data ? (JSON.parse(data) as InstallationPricing) : null
       if (parsed) {
-        // تأكد من وجود الحقول الأساسية
         return {
           zones: parsed.zones || {},
           sizes: parsed.sizes || [],
@@ -96,65 +98,47 @@ catch {}
           basePrices: parsed.basePrices || {}
         }
       }
-      // لا تعُد إلى بيانات تجريبية
       return { zones: {}, sizes: [], currency: 'د.ل', lastUpdated: new Date().toISOString(), basePrices: {} }
-    } catch (error) {
-      console.error('Error loading installation pricing:', error)
+    } catch {
       return { zones: {}, sizes: [], currency: 'د.ل', lastUpdated: new Date().toISOString(), basePrices: {} }
     }
   }
 
-  /**
-   * تحديث أسعار التركيب
-   */
+  // تحديث أسعار التركيب
   updateInstallationPricing(pricing: InstallationPricing): { success: boolean; message: string } {
     try {
-      const updatedPricing = {
-        ...pricing,
-        lastUpdated: new Date().toISOString()
-      }
+      const updatedPricing = { ...pricing, lastUpdated: new Date().toISOString() }
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updatedPricing))
-      // Persist to cloud (Supabase), non-blocking
       void cloudDatabase.saveInstallationPricing(updatedPricing)
-      return { success: true, message: 'تم حفظ أسعار التركيب بنجاح' }
+      return { success: true, message: 'تم حفظ أس��ار التركيب بنجاح' }
     } catch (error) {
       console.error('Error saving installation pricing:', error)
       return { success: false, message: 'حدث خطأ في حفظ البيانات' }
     }
   }
 
-  /**
-   * الحصول على سعر التركيب لمقاس ومنطقة محددة
-   */
+  // الحصول على سعر التركيب لمقاس ومنطقة محددة
   getInstallationPrice(size: BillboardSize, zone: string): number {
     const pricing = this.getInstallationPricing()
     const zoneData = pricing.zones[zone]
     const base = pricing.basePrices || {}
-    const basePrice = base[size] || 0
+    const basePrice = (base[size] ?? zoneData?.prices?.[size] ?? 0)
     const multiplier = zoneData?.multiplier ?? 1.0
     return Math.round(basePrice * multiplier)
   }
 
-  /**
-   * تحديد المنطقة التسعيرية للتركيب من معلومات اللوحة
-   */
+  // تحديد المنطقة التسعيرية للتركيب من معلومات اللوحة
   determineInstallationZone(municipality: string, area?: string): string {
     const municipalityLower = municipality.toLowerCase()
     const areaLower = area?.toLowerCase() || ''
-
-    // البحث عن المنطقة المناسبة
     if (municipalityLower.includes('مصراتة')) return 'مصراتة'
     if (municipalityLower.includes('أبو سليم') || areaLower.includes('أبو سليم')) return 'أبو سليم'
     if (municipalityLower.includes('زليتن')) return 'زليتن'
     if (municipalityLower.includes('بنغازي')) return 'بنغازي'
-
-    // افتراضي: مصراتة
     return 'مصراتة'
   }
 
-  /**
-   * إضافة مقاس جديد لجميع المناطق
-   */
+  // إضافة مقاس جديد لجميع المناطق
   addSizeToAllZones(size: BillboardSize, defaultPrice: number): { success: boolean; message: string } {
     try {
       const pricing = this.getInstallationPricing()
@@ -177,9 +161,7 @@ catch {}
     }
   }
 
-  /**
-   * حذف مقاس من جميع المناطق
-   */
+  // حذف مقاس من جميع المناطق
   removeSizeFromAllZones(size: BillboardSize): { success: boolean; message: string } {
     try {
       const pricing = this.getInstallationPricing()
@@ -188,7 +170,7 @@ catch {}
       }
       pricing.sizes = pricing.sizes.filter(s => s !== size)
       if (pricing.basePrices) {
-        const { [size]: _, ...rest } = pricing.basePrices
+        const { [size]: _omit, ...rest } = pricing.basePrices
         pricing.basePrices = rest
       }
       Object.keys(pricing.zones).forEach(zoneName => {
@@ -205,9 +187,7 @@ catch {}
     }
   }
 
-  /**
-   * إضافة منطقة جديدة
-   */
+  // إضافة منطقة جديدة
   addZone(zoneName: string, multiplier: number = 1.0, description?: string): { success: boolean; message: string } {
     try {
       const pricing = this.getInstallationPricing()
@@ -233,24 +213,17 @@ catch {}
     }
   }
 
-  /**
-   * حذف منطقة
-   */
+  // حذف منطقة
   removeZone(zoneName: string): { success: boolean; message: string } {
     try {
       const pricing = this.getInstallationPricing()
-      
-      // التحقق من وجود مناطق أخرى
       if (Object.keys(pricing.zones).length <= 1) {
         return { success: false, message: 'لا يمكن حذف آخر منطقة' }
       }
-
       if (!pricing.zones[zoneName]) {
         return { success: false, message: 'هذه المنطقة غير موجودة' }
       }
-
       delete pricing.zones[zoneName]
-      
       const result = this.updateInstallationPricing(pricing)
       if (result.success) {
         return { success: true, message: `تم حذف منطقة "${zoneName}" بنجاح` }
@@ -262,17 +235,10 @@ catch {}
     }
   }
 
-  /**
-   * إنشاء فاتورة عرض للتركيب
-   */
+  // إنشاء فاتورة عرض للت��كيب
   generateInstallationQuote(
     items: { size: BillboardSize; zone: string; quantity: number; description?: string }[],
-    customerInfo: {
-      name: string
-      email?: string
-      phone?: string
-      company?: string
-    },
+    customerInfo: { name: string; email?: string; phone?: string; company?: string },
     discount: number = 0,
     notes?: string
   ): InstallationQuote {
@@ -283,7 +249,6 @@ catch {}
     items.forEach(item => {
       const unitPrice = this.getInstallationPrice(item.size, item.zone)
       const totalPrice = unitPrice * item.quantity
-      
       quoteItems.push({
         id: `inst-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         size: item.size,
@@ -293,7 +258,6 @@ catch {}
         totalPrice,
         description: item.description || `تركيب لوحة إعلانية ${item.size} - ${item.zone}`
       })
-      
       subtotal += totalPrice
     })
 
@@ -316,9 +280,7 @@ catch {}
     }
   }
 
-  /**
-   * تصدير فاتورة العرض للطباعة
-   */
+  // تصدير فاتورة العرض للطباعة
   printInstallationQuote(quote: InstallationQuote): void {
     const printContent = `
       <!DOCTYPE html>
@@ -331,27 +293,9 @@ catch {}
         <style>
           @page { size: A4; margin: 15mm; }
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          body {
-            font-family: 'Tajawal', 'Cairo', Arial, sans-serif;
-            direction: rtl;
-            background: white;
-            color: #000;
-            line-height: 1.6;
-            font-size: 14px;
-          }
-          .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding: 15px 0;
-            border-bottom: 3px solid #D4AF37;
-          }
-          .logo-section {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-          }
+          body { font-family: 'Tajawal', 'Cairo', Arial, sans-serif; direction: rtl; background: white; color: #000; line-height: 1.6; font-size: 14px; }
+          .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 15px 0; border-bottom: 3px solid #D4AF37; }
+          .logo-section { display: flex; align-items: center; gap: 15px; }
           .logo { width: 80px; height: 80px; object-fit: contain; }
           .company-info { text-align: right; }
           .company-name { font-size: 20px; font-weight: 700; color: #000; margin-bottom: 5px; }
@@ -359,56 +303,20 @@ catch {}
           .quote-info { text-align: left; }
           .quote-title { font-size: 24px; font-weight: 700; color: #D4AF37; margin-bottom: 10px; }
           .quote-details { font-size: 12px; color: #666; }
-          
-          .customer-section {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-          }
+          .customer-section { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
           .customer-title { font-size: 18px; font-weight: 700; margin-bottom: 10px; color: #000; }
           .customer-details { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-          
           table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
           th, td { border: 1px solid #D4AF37; padding: 10px; text-align: center; }
           th { background: #D4AF37; color: #000; font-weight: 700; }
           tr:nth-child(even) { background: #f8f9fa; }
-          
-          .totals-section {
-            text-align: left;
-            margin-top: 20px;
-          }
-          .totals-table {
-            border: none;
-            width: 300px;
-            margin-left: auto;
-          }
-          .totals-table td {
-            border: 1px solid #ddd;
-            padding: 8px 15px;
-            font-weight: 600;
-          }
+          .totals-section { text-align: left; margin-top: 20px; }
+          .totals-table { border: none; width: 300px; margin-left: auto; }
+          .totals-table td { border: 1px solid #ddd; padding: 8px 15px; font-weight: 600; }
           .total-row { background: #D4AF37; color: #000; font-weight: 700; font-size: 16px; }
-          
-          .notes-section {
-            margin-top: 20px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 8px;
-          }
-          
-          .footer {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 2px solid #D4AF37;
-            text-align: center;
-            font-size: 12px;
-            color: #666;
-          }
-          
-          @media print {
-            body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
-          }
+          .notes-section { margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; }
+          .footer { margin-top: 30px; padding-top: 20px; border-top: 2px solid #D4AF37; text-align: center; font-size: 12px; color: #666; }
+          @media print { body { print-color-adjust: exact; -webkit-print-color-adjust: exact; } }
         </style>
       </head>
       <body>
@@ -433,8 +341,8 @@ catch {}
           <div class="customer-title">معلومات العميل</div>
           <div class="customer-details">
             <div><strong>الاسم:</strong> ${quote.customerInfo.name}</div>
-            <div><strong>الشركة:</strong> ${quote.customerInfo.company || 'غير محدد'}</div>
-            <div><strong>البري�� الإلكتروني:</strong> ${quote.customerInfo.email || 'غير محدد'}</div>
+            <div><strong>الشركة:</strong> ${quote.customerInfo.company || 'غي�� محدد'}</div>
+            <div><strong>البريد الإلكتروني:</strong> ${quote.customerInfo.email || 'غير محدد'}</div>
             <div><strong>رقم الهاتف:</strong> ${quote.customerInfo.phone || 'غير محدد'}</div>
           </div>
         </div>
@@ -453,7 +361,7 @@ catch {}
           <tbody>
             ${quote.items.map(item => `
               <tr>
-                <td>${item.description}</td>
+                <td>${item.description || ''}</td>
                 <td>${item.size}</td>
                 <td>${item.zone}</td>
                 <td>${item.quantity}</td>
@@ -492,16 +400,14 @@ catch {}
 
         <div class="footer">
           <p>شركة الفارس الذهبي للدعاية والإعلان</p>
-          <p>هذا عرض أسعار صالح لمدة 30 يوماً من تاريخ ال��صدار</p>
+          <p>هذا عرض أسعار صالح لمدة 30 يوماً من تاريخ الإصدار</p>
         </div>
 
         <script>
           window.onload = function() {
             setTimeout(function() {
               window.print();
-              setTimeout(function() {
-                window.close();
-              }, 1000);
+              setTimeout(function() { window.close(); }, 1000);
             }, 500);
           };
         </script>
@@ -511,37 +417,28 @@ catch {}
 
     const printWindow = window.open('', '_blank')
     if (!printWindow) return
-
     printWindow.document.write(printContent)
     printWindow.document.close()
   }
 
-  /**
-   * التحق�� من صحة المقاس
-   */
+  // التحقق من صحة المقاس
   validateSize(size: string): boolean {
     return /^\d+x\d+$/.test(size)
   }
 
-  /**
-   * الحصول على قائمة المناطق المتاحة
-   */
+  // الحصول على قائمة المناطق المتاحة
   getAvailableZones(): string[] {
     const pricing = this.getInstallationPricing()
     return Object.keys(pricing.zones)
   }
 
-  /**
-   * الحصول على قائمة المقاسات المتاحة
-   */
+  // الحصول على قائمة المقاسات المتاحة
   getAvailableSizes(): BillboardSize[] {
     const pricing = this.getInstallationPricing()
     return pricing.sizes
   }
 
-  /**
-   * الحصول على إحصائيات الأسعار
-   */
+  // الحصول على إحصائيات الأسعار
   getPricingStatistics(): {
     totalZones: number
     totalSizes: number
@@ -555,7 +452,7 @@ catch {}
 
     Object.values(pricing.zones).forEach(zone => {
       Object.values(zone.prices).forEach(price => {
-        allPrices.push(price * zone.multiplier)
+        allPrices.push(price * (zone.multiplier ?? 1))
       })
     })
 
@@ -570,6 +467,5 @@ catch {}
   }
 }
 
-// إنشاء مثيل واحد ��ن الخدمة
 export const installationPricingService = new InstallationPricingService()
 export default installationPricingService
