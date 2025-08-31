@@ -94,7 +94,7 @@ export class HybridSystemTest {
         throw new Error('بيانات أسعار التركيب غير صحيحة')
       }
       
-      const installationPrice = installationPricingService.getInstallationPrice('5x13', 'مصراتة')
+      const installationPrice = installationPricingService.getInstallationPrice('5x13', 'م��راتة')
       if (installationPrice === 0) {
         throw new Error('لا يمكن حساب سعر التركيب')
       }
@@ -357,7 +357,7 @@ export class HybridSystemTest {
 export const hybridSystemTest = new HybridSystemTest()
 
 // تشغيل اختبار سريع عند التحميل (في وضع التطوير فقط)
-if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+if (typeof window !== 'undefined' && import.meta.env && import.meta.env.DEV) {
   setTimeout(() => {
     hybridSystemTest.quickHybridTest()
   }, 2000)
@@ -367,6 +367,6 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
   ;(window as any).quickHybridTest = () => hybridSystemTest.quickHybridTest()
   
   console.log('🛠️ أدوات اختبار النظام المختلط متاحة:')
-  console.log('- runHybridSystemTest() - اختبار شامل')
+  console.log('- runHybridSystemTest() - اختبار ��امل')
   console.log('- quickHybridTest() - اختبار سريع')
 }

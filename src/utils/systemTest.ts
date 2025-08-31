@@ -281,7 +281,7 @@ export class SystemTest {
 export const systemTest = new SystemTest()
 
 // تشغيل اختبار سريع عند التحميل (في وضع التطوير فقط)
-if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+if (typeof window !== 'undefined' && import.meta.env && import.meta.env.DEV) {
   // تشغيل الاختبار بعد ثانية واحدة لضمان تحميل النظام
   setTimeout(() => {
     systemTest.quickTest()
