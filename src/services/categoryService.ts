@@ -80,7 +80,7 @@ class CategoryService {
   /**
    * الحصول على جميع الفئات
    */
-  getCategories(includeInactive: boolean = false): Category[] {
+  getCategories(includeInactive = false): Category[] {
     try {
       const stored = localStorage.getItem(this.STORAGE_KEY)
       const categories = stored ? JSON.parse(stored) : []
@@ -189,7 +189,7 @@ class CategoryService {
   /**
    * البحث في الفئات
    */
-  searchCategories(query: string, includeInactive: boolean = false): Category[] {
+  searchCategories(query: string, includeInactive = false): Category[] {
     const categories = this.getCategories(includeInactive)
     const searchTerm = query.toLowerCase().trim()
     
@@ -426,7 +426,7 @@ class CategoryService {
   /**
    * الحصول على أحدث الفئات المضافة
    */
-  getRecentCategories(limit: number = 5): Category[] {
+  getRecentCategories(limit = 5): Category[] {
     const categories = this.getCategories()
     return categories
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())

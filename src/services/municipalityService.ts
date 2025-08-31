@@ -261,7 +261,7 @@ class MunicipalityService {
   /**
    * تصدير البلديات إلى ملف Excel
    */
-  exportToExcel(filename: string = 'municipalities.xlsx'): void {
+  exportToExcel(filename = 'municipalities.xlsx'): void {
     const municipalities = this.getMunicipalities()
     
     const data = [

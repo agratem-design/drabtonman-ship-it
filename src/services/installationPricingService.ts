@@ -201,7 +201,7 @@ class InstallationPricingService {
   }
 
   // إضافة منطقة جديدة
-  addZone(zoneName: string, multiplier: number = 1.0, description?: string): { success: boolean; message: string } {
+  addZone(zoneName: string, multiplier = 1.0, description?: string): { success: boolean; message: string } {
     try {
       const pricing = this.getInstallationPricing()
       if (pricing.zones[zoneName]) {
@@ -252,7 +252,7 @@ class InstallationPricingService {
   generateInstallationQuote(
     items: { size: BillboardSize; zone: string; quantity: number; description?: string }[],
     customerInfo: { name: string; email?: string; phone?: string; company?: string },
-    discount: number = 0,
+    discount = 0,
     notes?: string
   ): InstallationQuote {
     const pricing = this.getInstallationPricing()

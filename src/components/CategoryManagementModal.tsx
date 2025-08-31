@@ -122,7 +122,7 @@ const CategoryManagementModal: React.FC<CategoryManagementModalProps> = ({
   }
 
   // Delete category
-  const deleteCategory = (id: string, permanent: boolean = false) => {
+  const deleteCategory = (id: string, permanent = false) => {
     const category = categoryService.getCategoryById(id)
     if (!category) return
 
