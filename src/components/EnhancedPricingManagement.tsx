@@ -394,8 +394,11 @@ const EnhancedPricingManagement: React.FC<{ onClose: () => void }> = ({ onClose 
           currentPricing.zones[zoneName].prices[customerType][size] = value
 
           const result = newPricingService.updatePricing(currentPricing)
-          if (result.success) {
+          const saved = await newPricingService.savePricingToCloud(currentPricing)
+          if (result.success && saved) {
             console.log(`تم حفظ السعر تلقائياً: ${size} - ${category} = ${value}`)
+          } else if (!saved) {
+            console.warn('فشل حفظ السعر في قاعدة البيانات')
           }
         }
       }
@@ -626,12 +629,13 @@ const EnhancedPricingManagement: React.FC<{ onClose: () => void }> = ({ onClose 
       }
 
       const result = newPricingService.updatePricing(updatedPricing)
+      const saved = await newPricingService.savePricingToCloud(updatedPricing)
 
-      if (result.success) {
+      if (result.success && saved) {
         console.log('تم حفظ التغييرات تلقائياً')
         return true
       } else {
-        console.error('فشل في الحفظ التلقائي:', result.error)
+        console.error('فشل في الحفظ التلقائي:', result.error || (!saved ? 'DB save failed' : ''))
         return false
       }
     } catch (error) {
@@ -668,7 +672,7 @@ const EnhancedPricingManagement: React.FC<{ onClose: () => void }> = ({ onClose 
     if (window.confirm('هل أنت متأكد من إلغاء جميع التغييرات غير المحفوظة؟')) {
       await initializePricingData()
       setUnsavedChanges({ hasChanges: false, changedCells: new Set() })
-      showNotification('success', 'تم إلغاء جميع التغييرات')
+      showNotification('success', 'تم إلغاء جميع التغ��يرات')
     }
   }
 
