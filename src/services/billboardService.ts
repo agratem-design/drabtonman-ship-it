@@ -256,16 +256,22 @@ export async function loadBillboardsFromExcel(): Promise<Billboard[]> {
 }
 
 /**
- * تحليل بيانات ملف الإكسل وتحويلها إلى كائنات Billboard
+ * تحليل بيانا�� ملف الإكسل وتحويلها إلى كائنات Billboard
  */
 async function parseExcelData(arrayBuffer: ArrayBuffer): Promise<Billboard[]> {
   try {
     const workbook = XLSX.read(arrayBuffer, { type: 'array' })
     const sheetName = workbook.SheetNames[0]
+    if (!sheetName) {
+      return []
+    }
     const worksheet = workbook.Sheets[sheetName]
-    
+    if (!worksheet) {
+      return []
+    }
+
     // تحويل البيانات إلى JSON
-    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][]
+    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' }) as any[][]
     
     if (!jsonData || jsonData.length < 2) {
       return []
@@ -425,7 +431,7 @@ export function exportBillboardsToExcel(billboards: Billboard[], filename: strin
   try {
     const headers = [
       'اسم اللوحة',
-      'الموقع', 
+      'الم��قع', 
       'البلدية',
       'المدينة',
       'المنطقة',
@@ -438,7 +444,7 @@ export function exportBillboardsToExcel(billboards: Billboard[], filename: strin
       'رابط الخريطة',
       'رقم العقد',
       'اسم العميل',
-      'ن��ع الإعلان'
+      'نوع الإعلان'
     ]
 
     const data = [
