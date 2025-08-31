@@ -95,6 +95,7 @@ export default function MainApp() {
         if (!sizes || sizes.length === 0) {
           sizes = Array.from(new Set(billboards.map((b) => (b.size || '').toString().trim()).filter(Boolean)))
         }
+        sizes = Array.from(new Set((sizes || []).map(s => (s || '').toString().trim()).filter(Boolean)))
         setSizeOptions(sizes)
       } catch {}
     }
@@ -955,7 +956,7 @@ ${selectedBillboardsData
         />
       )}
 
-      {/* الحاسبة المبسطة */}
+      {/* الحاس��ة المبسطة */}
       {showSimplifiedCalculator && (
         <SimplifiedPricingCalculator
           onClose={() => setShowSimplifiedCalculator(false)}
