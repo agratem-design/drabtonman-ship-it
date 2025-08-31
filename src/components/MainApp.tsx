@@ -898,17 +898,17 @@ ${selectedBillboardsData
       )}
 
       {/* نافذة إدارة الأسعار */}
-      {showPricingManagement && user?.permissions.some(p => p.name === 'admin_access') && (
+      {showPricingManagement && (user?.role === 'admin' || user?.permissions.some(p => p.name === 'admin_access')) && (
         <EnhancedPricingManagement onClose={() => setShowPricingManagement(false)} />
       )}
 
       {/* ناف��ة إدارة ��سعار التركيب */}
-      {showInstallationPricing && user?.permissions.some(p => p.name === 'admin_access') && (
+      {showInstallationPricing && (user?.role === 'admin' || user?.permissions.some(p => p.name === 'admin_access')) && (
         <InstallationPricingManagement onClose={() => setShowInstallationPricing(false)} />
       )}
 
       {/* نافذة فاتور�� العرض */}
-      {showQuoteDialog && user?.permissions.some(p => p.name === 'admin_access') && (
+      {showQuoteDialog && (user?.role === 'admin' || user?.permissions.some(p => p.name === 'admin_access')) && (
         <QuoteDialog
           isOpen={showQuoteDialog}
           onClose={() => setShowQuoteDialog(false)}
@@ -918,7 +918,7 @@ ${selectedBillboardsData
       )}
 
       {/* صفحة حالة النظام والاختبار */}
-      {showSystemStatus && user?.permissions.some(p => p.name === 'admin_access') && (
+      {showSystemStatus && (user?.role === 'admin' || user?.permissions.some(p => p.name === 'admin_access')) && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl max-h-[95vh] overflow-hidden">
             <div className="bg-gradient-to-r from-purple-600 to-purple-700 p-4 text-white flex items-center justify-between">
